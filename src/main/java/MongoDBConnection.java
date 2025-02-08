@@ -15,24 +15,29 @@ import org.json.JSONTokener;
 
 public class MongoDBConnection {
     public static void main(String[] args) {
+        long startTime = System.currentTimeMillis();
         String connectionString = "mongodb://localhost:27017";
         try (MongoClient mongoClient = MongoClients.create(connectionString)) {
             MongoDatabase database = mongoClient.getDatabase("mongoDB");
             System.out.println("Connesso al database: " + database.getName());
 
-            MongoCollection<Document> collection = database.getCollection("myCollection");
+            MongoCollection<Document> collection = database.getCollection("collection");
             List<Document> movies = getData();
             collection.insertMany(movies);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        System.out.println("Tempo di caricamento: " + duration + " millisecondi");
     }
+
 
     public static List<Document> getData() {
         List<Document> movies = new ArrayList<>();
 
-        try (FileReader reader = new FileReader("Movies.json")) {
+        try (FileReader reader = new FileReader("sample.json")) {
 
             JSONTokener tokener = new JSONTokener(reader);
             JSONArray jsonArray = new JSONArray(tokener);
@@ -67,15 +72,17 @@ public class MongoDBConnection {
                     String directorNameId = directorObject.optString("name_id", "");
                     director = new Person(directorName, directorNameId);
                 }
-
-                JSONArray castArray = jsonObject.getJSONArray("cast");
+                JSONArray castArray = jsonObject.optJSONArray("cast");
                 List<Person> cast = new ArrayList<>();
-                for (int j = 0; j < castArray.length(); j++) {
-                    JSONObject personObject = castArray.getJSONObject(j);
-                    String personName = personObject.optString("name", "");
-                    String personNameId = personObject.optString("name_id", "");
-                    Person person = new Person(personName, personNameId);
-                    cast.add(person);
+                if (castArray != null) {
+                    castArray = jsonObject.getJSONArray("cast");
+                    for (int j = 0; j < castArray.length(); j++) {
+                        JSONObject personObject = castArray.getJSONObject(j);
+                        String personName = personObject.optString("name", "");
+                        String personNameId = personObject.optString("name_id", "");
+                        Person person = new Person(personName, personNameId);
+                        cast.add(person);
+                    }
                 }
 
                 Film movie = new Film(imdbId, id, name, posterUrl, year, certificate, runtime,

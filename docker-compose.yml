@@ -1,0 +1,153 @@
+services:
+  configsvr:
+    image: mongo:4.4.0-bionic
+    container_name: configsvr
+    command: ["mongod", "--configsvr", "--replSet", "rsConfig", "--port", "27019"]
+    ports:
+      - 27019:27019
+    volumes:
+      - configsvr:/data/db
+    networks:
+      - mongonet
+
+  shard1:
+    image: mongo:4.4.0-bionic
+    container_name: shard1
+    command: ["mongod", "--shardsvr", "--replSet", "rsShard1", "--port", "27018"]
+    volumes:
+      - shard1:/data/db
+    networks:
+      - mongonet
+
+  shard1_secondary:
+    image: mongo:4.4.0-bionic
+    container_name: shard1_secondary
+    command: ["mongod", "--shardsvr", "--replSet", "rsShard1", "--port", "27018"]
+    volumes:
+      - shard1_secondary:/data/db
+    networks:
+      - mongonet
+
+  shard1_arbiter:
+    image: mongo:4.4.0-bionic
+    container_name: shard1_arbiter
+    command: ["mongod", "--replSet", "rsShard1", "--port", "27018"]
+    volumes:
+      - shard1_arbiter:/data/db
+    networks:
+      - mongonet
+
+  shard2:
+    image: mongo:4.4.0-bionic
+    container_name: shard2
+    command: ["mongod", "--shardsvr", "--replSet", "rsShard2", "--port", "27018"]
+    volumes:
+      - shard2:/data/db
+    networks:
+      - mongonet
+
+  shard2_secondary:
+    image: mongo:4.4.0-bionic
+    container_name: shard2_secondary
+    command: ["mongod", "--shardsvr", "--replSet", "rsShard2", "--port", "27018"]
+    volumes:
+      - shard2_secondary:/data/db
+    networks:
+      - mongonet
+
+  shard2_arbiter:
+    image: mongo:4.4.0-bionic
+    container_name: shard2_arbiter
+    command: ["mongod", "--replSet", "rsShard2", "--port", "27018"]
+    volumes:
+      - shard2_arbiter:/data/db
+    networks:
+      - mongonet
+
+  shard3:
+    image: mongo:4.4.0-bionic
+    container_name: shard3
+    command: ["mongod", "--shardsvr", "--replSet", "rsShard3", "--port", "27018"]
+    volumes:
+      - shard3:/data/db
+    networks:
+      - mongonet
+
+  shard3_secondary:
+    image: mongo:4.4.0-bionic
+    container_name: shard3_secondary
+    command: ["mongod", "--shardsvr", "--replSet", "rsShard3", "--port", "27018"]
+    volumes:
+      - shard3_secondary:/data/db
+    networks:
+      - mongonet
+
+  shard3_arbiter:
+    image: mongo:4.4.0-bionic
+    container_name: shard3_arbiter
+    command: ["mongod", "--replSet", "rsShard3", "--port", "27018"]
+    volumes:
+      - shard3_arbiter:/data/db
+    networks:
+      - mongonet
+
+  shard4:
+    image: mongo:4.4.0-bionic
+    container_name: shard4
+    command: ["mongod", "--shardsvr", "--replSet", "rsShard4", "--port", "27018"]
+    volumes:
+      - shard4:/data/db
+    networks:
+      - mongonet
+
+  shard4_secondary:
+    image: mongo:4.4.0-bionic
+    container_name: shard4_secondary
+    command: ["mongod", "--shardsvr", "--replSet", "rsShard4", "--port", "27018"]
+    volumes:
+      - shard4_secondary:/data/db
+    networks:
+      - mongonet
+
+  shard4_arbiter:
+    image: mongo:4.4.0-bionic
+    container_name: shard4_arbiter
+    command: ["mongod", "--replSet", "rsShard4", "--port", "27018"]
+    volumes:
+      - shard4_arbiter:/data/db
+    networks:
+      - mongonet
+
+  mongos:
+    image: mongo:4.4.0-bionic
+    container_name: mongos
+    command: ["mongos", "--configdb", "rsConfig/configsvr:27019", "--port", "27017"]
+    ports:
+      - 27017:27017
+    depends_on:
+      - configsvr
+      - shard1
+      - shard2
+      - shard3
+      - shard4
+    networks:
+      - mongonet
+
+volumes:
+  configsvr:
+  shard1:
+  shard1_secondary:
+  shard1_arbiter:
+  shard2:
+  shard2_secondary:
+  shard2_arbiter:
+  shard3:
+  shard3_secondary:
+  shard3_arbiter:
+  shard4:
+  shard4_secondary:
+  shard4_arbiter:
+
+networks:
+  mongonet:
+    driver: bridge

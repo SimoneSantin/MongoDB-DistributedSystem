@@ -6,10 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="99b358a0-96b1-4347-946d-215420b12478" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/Film.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Film.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/MongoDBConnection.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/MongoDBConnection.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/Person.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Person.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,6 +40,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Application.MongoDBConnection.executor": "Run",
     "Maven. [org.apache.maven.plugins:maven-archetype-plugin:RELEASE:generate].executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -76,6 +76,8 @@
       <workItem from="1738773343672" duration="1883000" />
       <workItem from="1738790643747" duration="3550000" />
       <workItem from="1738858920756" duration="3457000" />
+      <workItem from="1738932934136" duration="5006000" />
+      <workItem from="1739007821222" duration="8873000" />
     </task>
     <servers />
   </component>
