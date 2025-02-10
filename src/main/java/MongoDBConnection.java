@@ -1,7 +1,10 @@
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -14,23 +17,58 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 public class MongoDBConnection {
+
     public static void main(String[] args) {
-        long startTime = System.currentTimeMillis();
+        long startTime = 0;
+        int docs = 0;
         String connectionString = "mongodb://localhost:27017";
+        ClientSession session = null; // Dichiarata fuori dal try per evitare problemi nel finally
+
         try (MongoClient mongoClient = MongoClients.create(connectionString)) {
             MongoDatabase database = mongoClient.getDatabase("mongoDB");
-            System.out.println("Connesso al database: " + database.getName());
-
             MongoCollection<Document> collection = database.getCollection("collection");
+
+            // ------ STEP 1: Caricamento e conteggio dati
+            /*collection.drop();
             List<Document> movies = getData();
+            startTime = System.currentTimeMillis();
             collection.insertMany(movies);
+            docs = (int) collection.countDocuments(Filters.eq("year", "1914"));*/
+
+            // ------ STEP 2: Transazione multi-documento
+            Document movie1 = collection.find(Filters.eq("name", "Elskovsbarnet")).first();
+            Document movie2 = collection.find(Filters.eq("name", "Jack's First Major")).first();
+            System.out.println("Film prima di essere aggiornati: \n" + movie1 + movie2);
+            session = mongoClient.startSession();
+            session.startTransaction();
+
+            collection.updateOne(session, Filters.eq("name", "Elskovsbarnet"),
+                    new Document("$set", new Document("ratingValue", "9.0")));
+            Thread.sleep(10000);
+            collection.updateOne(session, Filters.eq("name", "Jack's First Major"),
+                    new Document("$set", new Document("runtime", "80 min")));
+
+            session.commitTransaction();
+            System.out.println("Transazione completata con successo.");
+            Document updatedMovie1 = collection.find(Filters.eq("name", "Elskovsbarnet")).first();
+            Document updatedMovie2 = collection.find(Filters.eq("name", "Jack's First Major")).first();
+            System.out.println("Film dopo essere aggiornati: \n" + updatedMovie1 + updatedMovie2);
 
         } catch (Exception e) {
             e.printStackTrace();
+            if (session != null) {
+                session.abortTransaction();
+                System.out.println("Errore nella transazione. Annullata.");
+            }
+        } finally {
+            if (session != null) {
+                session.close();
+            }
         }
-        long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
-        System.out.println("Tempo di caricamento: " + duration + " millisecondi");
+
+    /*long endTime = System.currentTimeMillis();
+    long duration = endTime - startTime;
+    System.out.println("\n Trovati " +docs+ " documenti, in " + duration + " millisecondi");*/
     }
 
 

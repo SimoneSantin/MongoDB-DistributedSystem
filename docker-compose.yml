@@ -121,7 +121,7 @@ services:
   mongos:
     image: mongo:4.4.0-bionic
     container_name: mongos
-    command: ["mongos", "--configdb", "rsConfig/configsvr:27019", "--port", "27017"]
+    command: ["mongos", "--configdb", "rsConfig/configsvr:27019", "--port", "27017", "--bind_ip_all"]
     ports:
       - 27017:27017
     depends_on:
