@@ -4,11 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="99b358a0-96b1-4347-946d-215420b12478" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/logback.yml" afterDir="false" />
+    <list default="true" id="99b358a0-96b1-4347-946d-215420b12478" name="Changes" comment="multi-document transaction">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/MongoDBConnection.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/MongoDBConnection.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -80,12 +77,27 @@
       <workItem from="1738932934136" duration="5006000" />
       <workItem from="1739007821222" duration="13820000" />
       <workItem from="1739095331320" duration="19411000" />
-      <workItem from="1739177946028" duration="8875000" />
+      <workItem from="1739177946028" duration="9528000" />
+      <workItem from="1739278156613" duration="5549000" />
+      <workItem from="1739354708445" duration="3755000" />
     </task>
+    <task id="LOCAL-00001" summary="multi-document transaction">
+      <option name="closed" value="true" />
+      <created>1739202734572</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1739202734572</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="multi-document transaction" />
+    <option name="LAST_COMMIT_MESSAGE" value="multi-document transaction" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
