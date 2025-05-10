@@ -1,9 +1,6 @@
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.mongodb.TransactionOptions;
-import com.mongodb.WriteConcern;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -14,28 +11,184 @@ import org.bson.Document;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import static com.mongodb.client.model.Updates.set;
+
 
 public class MongoDBConnection {
 
     public static void main(String[] args) {
         long startTime = 0;
         int docs = 0;
-        String connectionString = "mongodb://localhost:27017";
-        ClientSession session = null;
+        String connectionString = "mongodb://34.154.78.99:27017";
+    
+        ThreadLocal<ClientSession> sessionThreadLocal = new ThreadLocal<>();
 
         try (MongoClient mongoClient = MongoClients.create(connectionString)) {
             MongoDatabase database = mongoClient.getDatabase("mongoDB");
             MongoCollection<Document> collection = database.getCollection("collection");
-
+            System.out.println("Connesso");
             // ------ STEP 1: Caricamento e conteggio dati
             collection.drop();
             List<Document> movies = getData();
             startTime = System.currentTimeMillis();
             collection.insertMany(movies);
-            docs = (int) collection.countDocuments(Filters.eq("year", "1914"));
+            docs = (int) collection.countDocuments(Filters.eq("ImdbId", "tt2421546"));
+            System.out.println("trovati " + docs + " documenti con anno 2014");
+            // ------ STEP 2: Politiche di isolamento
+            //Loss updates
+            /*Runnable userA = () -> {
+                sessionThreadLocal.set(mongoClient.startSession());
+                ClientSession session = sessionThreadLocal.get();
+                session.startTransaction();
+                System.out.println("Prima della scrittura di A" + collection.find(session, Filters.eq("name", "Elskovsbarnet")).first());
+                Document doc = collection.find(session, Filters.eq("name", "Elskovsbarnet")).first();
+                int ratingValue = Integer.parseInt(doc.getString("ratingValue")) - 1;
+                collection.updateOne(session, Filters.eq("name", "Elskovsbarnet"), set("ratingValue", ratingValue));
+                session.commitTransaction();
+                System.out.println("A ha scritto: " + collection.find(session, Filters.eq("name", "Elskovsbarnet")).first());
+                
+            };
 
-            // ------ STEP 2: Transazione multi-documento
-            Document movie1 = collection.find(Filters.eq("name", "Elskovsbarnet")).first();
+            Runnable userB = () -> {
+                sessionThreadLocal.set(mongoClient.startSession());
+                ClientSession session = sessionThreadLocal.get();
+                session.startTransaction();
+                System.out.println("Prima della scrittura di B" + collection.find(session, Filters.eq("name", "Elskovsbarnet")).first());
+                Document doc = collection.find(session, Filters.eq("name", "Elskovsbarnet")).first();
+                int ratingValue = Integer.parseInt(doc.getString("ratingValue")) - 2;
+                collection.updateOne(session, Filters.eq("name", "Elskovsbarnet"), set("ratingValue", ratingValue));
+                session.commitTransaction();
+                System.out.println("B ha scritto: " + collection.find(session, Filters.eq("name", "Elskovsbarnet")).first());
+                
+            };
+
+            
+            Thread tA = new Thread(userA);
+            Thread tB = new Thread(userB);
+
+            tA.start();
+            tB.start();
+
+            tA.join();
+            tB.join();
+
+            Document finalDoc = collection.find(Filters.eq("name", "Elskovsbarnet")).first();
+            System.out.println("Valore finale nel database: " + finalDoc);*/
+            //Dirty reads
+            /*Runnable writer = () -> {
+                sessionThreadLocal.set(mongoClient.startSession());
+                ClientSession session = sessionThreadLocal.get();
+                session.startTransaction();
+                Document doc = collection.find(session, Filters.eq("name", "Elskovsbarnet")).first();
+                int ratingValue = Integer.parseInt(doc.getString("ratingValue")) - 3;
+                collection.updateOne(session, Filters.eq("name", "Elskovsbarnet"), set("ratingValue", ratingValue));
+                System.out.println("Writer ha scritto: " + collection.find(session, Filters.eq("name", "Elskovsbarnet")).first());
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } 
+                session.commitTransaction();
+                
+            };
+
+            Runnable reader = () -> {
+                sessionThreadLocal.set(mongoClient.startSession());
+                ClientSession session = sessionThreadLocal.get();
+                session.startTransaction();
+                Document doc = collection.find(session, Filters.eq("name", "Elskovsbarnet")).first();
+                System.out.println("Reader ha letto: " + doc);
+                session.commitTransaction();
+            };
+
+            
+            Thread tA = new Thread(writer);
+            Thread tB = new Thread(reader);
+
+            tA.start();
+            tB.start();
+
+            tA.join();
+            tB.join();*/
+            //Non-repeatable reads
+           /*Runnable writer = () -> {
+                sessionThreadLocal.set(mongoClient.startSession());
+                ClientSession session = sessionThreadLocal.get();
+                session.startTransaction();
+                Document doc = collection.find(session, Filters.eq("name", "Elskovsbarnet")).first();
+                int ratingValue = Integer.parseInt(doc.getString("ratingValue")) - 3;
+                collection.updateOne(session, Filters.eq("name", "Elskovsbarnet"), set("ratingValue", ratingValue));
+                System.out.println("Writer ha scritto: " + collection.find(session, Filters.eq("name", "Elskovsbarnet")).first());
+                session.commitTransaction();
+                
+            };
+
+            Runnable reader = () -> {
+                sessionThreadLocal.set(mongoClient.startSession());
+                ClientSession session = sessionThreadLocal.get();
+                session.startTransaction();
+                Document docFirstRead = collection.find(session, Filters.eq("name", "Elskovsbarnet")).first();
+                System.out.println("Prima lettura: " + docFirstRead);
+                 try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } 
+                Document docSecondRead = collection.find(session, Filters.eq("name", "Elskovsbarnet")).first();
+                System.out.println("Seconda lettura: " + docSecondRead);
+                session.commitTransaction();
+            };
+
+            
+            Thread tA = new Thread(writer);
+            Thread tB = new Thread(reader);
+
+            tA.start();
+            tB.start();
+
+            tA.join();
+            tB.join();*/
+            //Phantom reads
+            Runnable userA = () -> {
+                try (ClientSession session = mongoClient.startSession()) {
+                    session.startTransaction();
+                    List<Document> firstRead = collection.find(session, Filters.gt("ratingValue", 8)).into(new ArrayList<>());
+                    System.out.println("UserA: Primo risultato count = " + firstRead.size());
+                    Thread.sleep(3000); 
+                    List<Document> secondRead = collection.find(session, Filters.gt("ratingValue", 8)).into(new ArrayList<>());
+                    System.out.println("UserA: Secondo risultato count = " + secondRead.size());
+                    session.commitTransaction();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            };
+
+            Runnable userB = () -> {
+                try (ClientSession session = mongoClient.startSession()) {
+                    session.startTransaction();
+                    Document newDoc = new Document("name", "NuovoFilm")
+                        .append("ratingValue", 8)
+                        .append("ImdbId", "phantom123");
+
+                    collection.insertOne(session, newDoc);
+                    session.commitTransaction();
+                    System.out.println("UserB: Inserimento completato");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            };
+
+            Thread tA = new Thread(userA);
+            Thread tB = new Thread(userB);
+
+            tA.start();
+            Thread.sleep(1000); 
+            tB.start();
+
+            tA.join();
+            tB.join();
+
+            /*Document movie1 = collection.find(Filters.eq("name", "Elskovsbarnet")).first();
             Document movie2 = collection.find(Filters.eq("name", "Jack's First Major")).first();
             System.out.println("Film prima di essere aggiornati: \n" + movie1 + movie2);
             session = mongoClient.startSession();
@@ -53,23 +206,17 @@ public class MongoDBConnection {
             System.out.println("Transazione completata con successo.");
             Document updatedMovie1 = collection.find(Filters.eq("name", "Elskovsbarnet")).first();
             Document updatedMovie2 = collection.find(Filters.eq("name", "Jack's First Major")).first();
-            System.out.println("Film dopo essere aggiornati: \n" + updatedMovie1 + updatedMovie2);
+            System.out.println("Film dopo essere aggiornati: \n" + updatedMovie1 + updatedMovie2);*/
 
         } catch (Exception e) {
             e.printStackTrace();
-            if (session != null) {
-                session.abortTransaction();
-            }
-        } finally {
-            if (session != null) {
-                session.close();
-            }
         }
 
         long endTime = System.currentTimeMillis();
         long duration = endTime - startTime;
         System.out.println("\n Trovati " +docs+ " documenti, in " + duration + " millisecondi");
     }
+
 
 
     public static List<Document> getData() {
