@@ -81,7 +81,7 @@ mongo --port 27017 --eval 'sh.enableSharding("mongoDB")'
 ```
 
 ```sh
-mongo --port 27017 --eval 'sh.shardCollection("mongoDB.collection", { "ImdbId": 1 })'
+mongo --port 27017 --eval 'sh.shardCollection("mongoDB.collection", { "artist": 1 })'
 ```
 
 ```sh

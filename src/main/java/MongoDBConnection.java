@@ -1,6 +1,12 @@
+import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.mongodb.ClientSessionOptions;
+import com.mongodb.ReadConcern;
+import com.mongodb.TransactionOptions;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -9,6 +15,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import static com.mongodb.client.model.Updates.set;
@@ -19,9 +26,8 @@ public class MongoDBConnection {
     public static void main(String[] args) {
         long startTime = 0;
         int docs = 0;
-        String connectionString = "mongodb://34.154.253.247:27017";
-    
-        ThreadLocal<ClientSession> sessionThreadLocal = new ThreadLocal<>();
+        String connectionString = "mongodb://34.154.179.44:27017";
+        
 
         try (MongoClient mongoClient = MongoClients.create(connectionString)) {
             MongoDatabase database = mongoClient.getDatabase("mongoDB");
@@ -29,13 +35,41 @@ public class MongoDBConnection {
             System.out.println("Connesso");
             // ------ STEP 1: Caricamento e conteggio dati
             collection.drop();
-            List<Document> movies = getData();
+            List<Document> songs = getData();
             startTime = System.currentTimeMillis();
-            collection.insertMany(movies);
-            docs = (int) collection.countDocuments(Filters.eq("ImdbId", "tt2421546"));
-            System.out.println("trovati " + docs + " documenti con anno 2014");
+            collection.insertMany(songs);
+            /*docs = (int) collection.countDocuments(Filters.eq("artist", "Metallica"));
+            System.out.println("trovati " + docs + " canzoni dei Metallica");*/
+
             // ------ STEP 2: Politiche di isolamento
             //Loss updates
+            Runnable userA = () -> {
+                Document doc = collection.find(Filters.eq("song", "Master of Puppets")).first();
+                int popularity = doc.getInteger("Tempo") - 5;
+                collection.updateOne(Filters.eq("song", "Master of Puppets"), set("Tempo", popularity));
+                System.out.println("A ha scritto: " + popularity);
+            };
+
+            Runnable userB = () -> {
+                Document doc = collection.find(Filters.eq("song", "Master of Puppets")).first();
+                int popularity = doc.getInteger("Tempo") - 10;
+                collection.updateOne(Filters.eq("song", "Master of Puppets"), set("Tempo", popularity));
+                System.out.println("B ha scritto: " + popularity);
+            };
+
+                        
+            Thread tA = new Thread(userA);
+            Thread tB = new Thread(userB);
+
+            tA.start();
+            tB.start();
+
+            tA.join();
+            tB.join();
+
+            Document finalDoc = collection.find(Filters.eq("song", "Master of Puppets")).first();
+            System.out.println("Valore finale nel database: " + finalDoc);
+
             /*Runnable userA = () -> {
                  try (ClientSession session = mongoClient.startSession()) {
                     session.startTransaction();
@@ -85,15 +119,20 @@ public class MongoDBConnection {
                     int ratingValue = Integer.parseInt(doc.getString("ratingValue")) - 3;
                     collection.updateOne(session, Filters.eq("name", "Elskovsbarnet"), set("ratingValue", ratingValue));
                     System.out.println("Writer ha scritto: " + collection.find(session, Filters.eq("name", "Elskovsbarnet")).first());
-                    Thread.sleep(5000);
-                    session.commitTransaction();
+                    Thread.sleep(1000);
+                    session.abortTransaction();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             };
 
             Runnable reader = () -> {
-                try (ClientSession session = mongoClient.startSession()) {
+                    try (ClientSession session = mongoClient.startSession(
+                        ClientSessionOptions.builder()
+                            .defaultTransactionOptions(TransactionOptions.builder()
+                                .readConcern(ReadConcern.LOCAL)
+                                .build())
+                            .build())) {
                     session.startTransaction();
                     Document doc = collection.find(session, Filters.eq("name", "Elskovsbarnet")).first();
                     System.out.println("Reader ha letto: " + doc);
@@ -108,19 +147,20 @@ public class MongoDBConnection {
             Thread tB = new Thread(reader);
 
             tA.start();
+            Thread.sleep(1000);
             tB.start();
 
             tA.join();
             tB.join();*/
 
             //Non-repeatable reads
-            Runnable writer = () -> {
+           /*  Runnable writer = () -> {
                try (ClientSession session = mongoClient.startSession()) {
                     session.startTransaction();
-                    Document doc = collection.find(session, Filters.eq("name", "Elskovsbarnet")).first();
-                    int ratingValue = Integer.parseInt(doc.getString("ratingValue")) - 3;
-                    collection.updateOne(session, Filters.eq("name", "Elskovsbarnet"), set("ratingValue", ratingValue));
-                    System.out.println("Writer ha scritto: " + collection.find(session, Filters.eq("name", "Elskovsbarnet")).first());
+                    Document doc = collection.find(session, Filters.eq("artist", "ABBA")).first();
+                    int tempo = Integer.parseInt(doc.getString("Tempo")) - 15;
+                    collection.updateOne(session, Filters.eq("artist", "ABBA"), set("Tempo", tempo));
+                    System.out.println("Writer ha scritto: " + collection.find(session, Filters.eq("artist", "ABBA")).first());
                     session.commitTransaction();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -130,10 +170,10 @@ public class MongoDBConnection {
             Runnable reader = () -> {
                 try (ClientSession session = mongoClient.startSession()) {
                     session.startTransaction();
-                    Document docFirstRead = collection.find(session, Filters.eq("name", "Elskovsbarnet")).first();
+                    Document docFirstRead = collection.find(session, Filters.eq("artist", "ABBA")).first();
                     System.out.println("Prima lettura: " + docFirstRead);
                     Thread.sleep(5000);
-                    Document docSecondRead = collection.find(session, Filters.eq("name", "Elskovsbarnet")).first();
+                    Document docSecondRead = collection.find(session, Filters.eq("artist", "ABBA")).first();
                     System.out.println("Seconda lettura: " + docSecondRead);
                     session.commitTransaction();
                 } catch (Exception e) {
@@ -142,6 +182,18 @@ public class MongoDBConnection {
             };
 
             
+           /*  Runnable reader = () -> {
+                try {
+                    Document docFirstRead = collection.find(Filters.eq("name", "Elskovsbarnet")).first();
+                    System.out.println("Prima lettura : " + docFirstRead);
+                    Thread.sleep(2000);
+                    Document docSecondRead = collection.find(Filters.eq("name", "Elskovsbarnet")).first();
+                    System.out.println("Seconda lettura : " + docSecondRead);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            };
+            
             Thread tA = new Thread(writer);
             Thread tB = new Thread(reader);
 
@@ -149,17 +201,30 @@ public class MongoDBConnection {
             tB.start();
 
             tA.join();
-            tB.join();
+            tB.join();*/
 
             //Phantom reads
+
             /*Runnable userA = () -> {
+                try {
+                    List<Document> firstRead = collection.find(Filters.gt("ratingValue", 8)).into(new ArrayList<>());
+                    System.out.println("UserA: Primo risultato count = " + firstRead.size());
+                    Thread.sleep(5000); 
+                    List<Document> secondRead = collection.find(Filters.gt("ratingValue", 8)).into(new ArrayList<>());
+                    System.out.println("UserA: Secondo risultato count = " + secondRead.size());
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            };
+
+
+            Runnable userA = () -> {
                 try (ClientSession session = mongoClient.startSession()) {
                     session.startTransaction();
                     List<Document> firstRead = collection.find(session, Filters.gt("ratingValue", 8)).into(new ArrayList<>());
                     System.out.println("UserA: Primo risultato count = " + firstRead.size());
-                    session.commitTransaction();
                      Thread.sleep(3000);
-                    session.startTransaction();
                     List<Document> secondRead = collection.find(session, Filters.gt("ratingValue", 8)).into(new ArrayList<>());
                     System.out.println("UserA: Secondo risultato count = " + secondRead.size());
                     session.commitTransaction();
@@ -188,7 +253,6 @@ public class MongoDBConnection {
             Thread tB = new Thread(userB);
 
             tA.start();
-            Thread.sleep(1000); 
             tB.start();
 
             tA.join();
@@ -225,68 +289,20 @@ public class MongoDBConnection {
         System.out.println("\n Trovati " +docs+ " documenti, in " + duration + " millisecondi");
     }
 
-
-
     public static List<Document> getData() {
-        List<Document> movies = new ArrayList<>();
-
-        try (FileReader reader = new FileReader("sample.json")) {
-
-            JSONTokener tokener = new JSONTokener(reader);
-            JSONArray jsonArray = new JSONArray(tokener);
-
-
-            for (int i = 0; i < jsonArray.length(); i++) {
-
-                JSONObject jsonObject = jsonArray.getJSONObject(i);
-                String imdbId = jsonObject.optString("ImdbId", "");
-                String id = jsonObject.optString("_id", "");
-                String name = jsonObject.optString("name", "");
-                String posterUrl = jsonObject.optString("poster_url", "");
-                String year = jsonObject.optString("year", "");
-                String certificate = jsonObject.optString("certificate", "");
-                String runtime = jsonObject.optString("runtime", "");
-                String ratingValue = jsonObject.optString("ratingValue", "");
-                String summaryText = jsonObject.optString("summary_text", "");
-                String ratingCount = jsonObject.optString("ratingCount", "");
-
-                JSONArray genreArray = jsonObject.optJSONArray("genre");
-                List<String> genre = new ArrayList<>();
-                if (genreArray != null) {
-                    for (int j = 0; j < genreArray.length(); j++) {
-                        genre.add(genreArray.optString(j, ""));
-                    }
-                }
-
-                JSONObject directorObject = jsonObject.optJSONObject("director");
-                Person director = null;
-                if (directorObject != null) {
-                    String directorName = directorObject.optString("name", "");
-                    String directorNameId = directorObject.optString("name_id", "");
-                    director = new Person(directorName, directorNameId);
-                }
-                JSONArray castArray = jsonObject.optJSONArray("cast");
-                List<Person> cast = new ArrayList<>();
-                if (castArray != null) {
-                    castArray = jsonObject.getJSONArray("cast");
-                    for (int j = 0; j < castArray.length(); j++) {
-                        JSONObject personObject = castArray.getJSONObject(j);
-                        String personName = personObject.optString("name", "");
-                        String personNameId = personObject.optString("name_id", "");
-                        Person person = new Person(personName, personNameId);
-                        cast.add(person);
-                    }
-                }
-
-                Film movie = new Film(imdbId, id, name, posterUrl, year, certificate, runtime,
-                        genre, ratingValue, summaryText, ratingCount, director, cast);
-                movies.add(movie.toDocument());
+        List<Document> documents = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader("spotify_dataset.json"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                JSONObject jsonObject = new JSONObject(line);
+                Document doc = Document.parse(jsonObject.toString());
+                documents.add(doc);
             }
-
-        } catch (Exception e) {
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
-
-        return movies;
+        return documents;
     }
+
 }
+
