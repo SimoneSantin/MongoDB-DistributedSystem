@@ -15,7 +15,7 @@ services:
     container_name: shard1
     command: ["mongod", "--shardsvr", "--replSet", "rsShard1", "--port", "27018"]
     volumes:
-      - shard1:/data/db
+      - /mnt/shard1_data:/data/db
     networks:
       - mongonet
 
@@ -24,7 +24,7 @@ services:
     container_name: shard1_secondary
     command: ["mongod", "--shardsvr", "--replSet", "rsShard1", "--port", "27018"]
     volumes:
-      - shard1_secondary:/data/db
+       - shard1_secondary:/data/db
     networks:
       - mongonet
 
@@ -42,7 +42,7 @@ services:
     container_name: shard2
     command: ["mongod", "--shardsvr", "--replSet", "rsShard2", "--port", "27018"]
     volumes:
-      - shard2:/data/db
+        - /mnt/shard2_data:/data/db
     networks:
       - mongonet
 
@@ -51,7 +51,7 @@ services:
     container_name: shard2_secondary
     command: ["mongod", "--shardsvr", "--replSet", "rsShard2", "--port", "27018"]
     volumes:
-      - shard2_secondary:/data/db
+        - shard2_secondary:/data/db
     networks:
       - mongonet
 
@@ -60,7 +60,7 @@ services:
     container_name: shard2_arbiter
     command: ["mongod", "--replSet", "rsShard2", "--port", "27018"]
     volumes:
-      - shard2_arbiter:/data/db
+        - shard2_arbiter:/data/db
     networks:
       - mongonet
 
@@ -69,7 +69,7 @@ services:
     container_name: shard3
     command: ["mongod", "--shardsvr", "--replSet", "rsShard3", "--port", "27018"]
     volumes:
-      - shard3:/data/db
+       - /mnt/shard3_data:/data/db
     networks:
       - mongonet
 
@@ -78,7 +78,7 @@ services:
     container_name: shard3_secondary
     command: ["mongod", "--shardsvr", "--replSet", "rsShard3", "--port", "27018"]
     volumes:
-      - shard3_secondary:/data/db
+       - shard3_secondary:/data/db
     networks:
       - mongonet
 
@@ -87,7 +87,7 @@ services:
     container_name: shard3_arbiter
     command: ["mongod", "--replSet", "rsShard3", "--port", "27018"]
     volumes:
-      - shard3_arbiter:/data/db
+       - shard3_arbiter:/data/db
     networks:
       - mongonet
 
@@ -96,7 +96,7 @@ services:
     container_name: shard4
     command: ["mongod", "--shardsvr", "--replSet", "rsShard4", "--port", "27018"]
     volumes:
-      - shard4:/data/db
+      - /mnt/shard4_data:/data/db
     networks:
       - mongonet
 
